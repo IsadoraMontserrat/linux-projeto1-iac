@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Nome do script: cria_infraestrutura.sh
+# Objetivo: Automatizar a criação de usuários, grupos, diretórios e permissões
+
+# Variáveis de grupos
+GRP_ADM="GRP_ADM"
+GRP_VEN="GRP_VEN"
+GRP_SEC="GRP_SEC"
+GRP_TI="GRP_TI"
+
+# Diretórios
+DIR_PUBLICO="/publico"
+DIR_ADM="/adm"
+DIR_VEN="/ven"
+DIR_SEC="/sec"
+DIR_TI="/ti"
+
+# Arrays de usuários
+USUARIOS_ADM=("carlos" "maria" "joao" "ana")
+USUARIOS_VEN=("debora" "sebastiana" "roberto" "felipe")
+USUARIOS_SEC=("josefina" "amanda" "rogerio" "bruna")
+USUARIOS_TI=("marcos" "paula" "lucas" "carla")
+
+# Função para criar grupos
+criar_grupo() {
+    local GRUPO=$1
+    if getent group "$GRUPO" > /dev/null; then
+        echo "Grupo '$GRUPO' já existe."
+    else
+        groupadd "$GRUPO"
+        echo "Grupo '$GRUPO' criado com sucesso."
+    fi
+}
+
+# Função para criar usuários
+criar_usuario() {
+    local USUARIO=$1
+    local GRUPO=$2
+    if id "$USUARIO" &>/dev/null; then
+        echo "Usuário '$USUARIO' já existe."
+    else
+        useradd "$USUARIO" -m -s /bin/bash -p $(openssl passwd -crypt Senha123) -G "$GRUPO"
+        echo "Usuário '$USUARIO' criado e adicionado ao grupo '$GRUPO'."
+    fi
+}
+
+# Função para criar diretórios
+criar_diretorio() {
+    local DIRETORIO=$1
+    if [ ! -d "$DIRETORIO" ]; then
+        mkdir "$DIRETORIO"
+        echo "Diretório '$DIRETORIO' criado."
+    else
+        echo "Diretório '$DIRETORIO' já existe."
+    fi
+}
+
+# Começando o script
+echo "Iniciando a criação da infraestrutura..."
+
+# Criando diretórios
+criar_diretorio "$DIR_PUBLICO"
+criar_diretorio "$DIR_ADM"
+criar_diretorio "$DIR_VEN"
+criar_diretorio "$DIR_SEC"
+criar_diretorio "$DIR_TI"
+
+# Criando grupos
+criar_grupo "$GRP_ADM"
+criar_grupo "$GRP_VEN"
+criar_grupo "$GRP_SEC"
+criar_grupo "$GRP_TI"
+
+# Criando usuários e adicionando aos seus grupos
+for usuario in "${USUARIOS_ADM[@]}"; do
+    criar_usuario "$usuario" "$GRP_ADM"
+done
+
+for usuario in "${USUARIOS_VEN[@]}"; do
+    criar_usuario "$usuario" "$GRP_VEN"
+done
+
+for usuario in "${USUARIOS_SEC[@]}"; do
+    criar_usuario "$usuario" "$GRP_SEC"
+done
+
+for usuario in "${USUARIOS_TI[@]}"; do
+    criar_usuario "$usuario" "$GRP_TI"
+done
+
+# Definindo permissões dos diretórios
+echo "Definindo permissões dos diretórios..."
+
+chown root:"$GRP_ADM" "$DIR_ADM"
+chown root:"$GRP_VEN" "$DIR_VEN"
+chown root:"$GRP_SEC" "$DIR_SEC"
+chown root:"$GRP_TI" "$DIR_TI"
+
+chmod 770 "$DIR_ADM"
+chmod 770 "$DIR_VEN"
+chmod 770 "$DIR_SEC"
+chmod 770 "$DIR_TI"
+chmod 777 "$DIR_PUBLICO"
+
+echo "Infraestrutura criada com sucesso!"
